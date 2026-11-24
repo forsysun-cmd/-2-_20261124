@@ -1,0 +1,2859 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>원천징수 간편 계산기 | 세무실무용</title>
+  <style>
+    /* ==========================================================================
+       기본 스타일 및 CSS 변수 (업무용 깔끔한 그린 포인트 디자인)
+       ========================================================================== */
+    :root {
+      --primary-color: #059669;        /* 에메랄드 그린 */
+      --primary-hover: #047857;
+      --primary-light: #ecfdf5;
+      --primary-border: #a7f3d0;
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-sub: #334155;
+      --border-color: #e2e8f0;
+      --border-focus: #10b981;
+      --error-color: #ef4444;
+      --error-bg: #fef2f2;
+      --warning-color: #d97706;
+      --warning-bg: #fffbeb;
+      --warning-border: #fde68a;
+      --badge-success-bg: #dcfce7;
+      --badge-success-text: #15803d;
+      --badge-warning-bg: #fef3c7;
+      --badge-warning-text: #b45309;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--text-main);
+      background-color: var(--bg-main);
+      padding: 24px 16px 60px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ==========================================================================
+       헤더 영역
+       ========================================================================== */
+    header {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--primary-light);
+      border: 1px solid var(--primary-border);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--primary-color);
+    }
+
+    .brand-text h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    .brand-text p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .btn-guide {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #f1f5f9;
+      color: var(--text-sub);
+      border: 1px solid var(--border-color);
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-guide:hover {
+      background-color: #e2e8f0;
+      color: var(--text-main);
+    }
+
+    /* ==========================================================================
+       탭 네비게이션
+       ========================================================================== */
+    .tabs-nav {
+      display: flex;
+      gap: 6px;
+      background: #e2e8f0;
+      padding: 6px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 130px;
+      padding: 12px 14px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .tab-btn.active {
+      background: var(--bg-card);
+      color: var(--primary-color);
+      box-shadow: var(--shadow-sm);
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       메인 탭 패널 컨테이너
+       ========================================================================== */
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 공통 카드 스타일 */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 안내 및 경고 박스 */
+    .alert-box {
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .alert-warning {
+      background-color: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      color: var(--warning-color);
+    }
+
+    .alert-info {
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+    }
+
+    .alert-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* 모드 선택 세그먼트 컨트롤 */
+    .segmented-control {
+      display: flex;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .segment-btn {
+      flex: 1;
+      padding: 9px 12px;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .segment-btn.active {
+      background: var(--bg-card);
+      color: var(--primary-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 폼 입력 그룹 */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    .form-label .sub-desc {
+      font-size: 12px;
+      font-weight: normal;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 46px;
+      padding: 10px 42px 10px 14px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      background-color: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+      text-align: right;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .form-control.is-invalid {
+      border-color: var(--error-color);
+      background-color: var(--error-bg);
+    }
+
+    .input-unit {
+      position: absolute;
+      right: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .error-msg {
+      display: none;
+      color: var(--error-color);
+      font-size: 12px;
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .error-msg.show {
+      display: block;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+    }
+
+    /* 체크박스 커스텀 */
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      margin-top: 6px;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary-color);
+      cursor: pointer;
+    }
+
+    /* 일용직 상세입력 테이블 */
+    .detail-table-wrapper {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .detail-table th {
+      background-color: #f8fafc;
+      padding: 10px 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .detail-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+
+    .detail-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .detail-table .row-input {
+      width: 100%;
+      height: 36px;
+      padding: 6px 30px 6px 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: right;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+
+    .btn-add-row {
+      width: 100%;
+      padding: 10px;
+      background: #f8fafc;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--primary-color);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-add-row:hover {
+      background: var(--primary-light);
+      border-color: var(--primary-border);
+    }
+
+    .btn-del-row {
+      background: transparent;
+      border: none;
+      color: var(--error-color);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-del-row:hover {
+      background: var(--error-bg);
+    }
+
+    /* ==========================================================================
+       결과 영역
+       ========================================================================== */
+    .result-section {
+      background: #ffffff;
+      border: 2px solid var(--primary-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-top: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .result-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .result-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-success {
+      background-color: var(--badge-success-bg);
+      color: var(--badge-success-text);
+    }
+
+    .badge-warning {
+      background-color: var(--badge-warning-bg);
+      color: var(--badge-warning-text);
+    }
+
+    /* 핵심 실지급액 하이라이트 박스 */
+    .highlight-net-box {
+      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+      border: 1px solid var(--primary-border);
+      border-radius: var(--radius-md);
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .highlight-net-box .label {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary-hover);
+    }
+
+    .highlight-net-box .amount-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .highlight-net-box .amount {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary-color);
+      letter-spacing: -0.5px;
+    }
+
+    .highlight-net-box .unit {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary-hover);
+    }
+
+    /* 결과 요약 표 */
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .result-table tr {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .result-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .result-table th {
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      width: 40%;
+    }
+
+    .result-table td {
+      padding: 12px 14px;
+      text-align: right;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .result-table tr.total-tax-row {
+      background-color: #f8fafc;
+    }
+    .result-table tr.total-tax-row th,
+    .result-table tr.total-tax-row td {
+      color: var(--warning-color);
+      font-weight: 700;
+    }
+
+    .result-table tr.net-row {
+      background-color: var(--primary-light);
+    }
+    .result-table tr.net-row th,
+    .result-table tr.net-row td {
+      color: var(--primary-color);
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    /* 액션 버튼 그룹 (복사, 계산과정, 인쇄) */
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-outline {
+      background-color: #ffffff;
+      border-color: var(--border-color);
+      color: var(--text-sub);
+    }
+    .btn-outline:hover {
+      background-color: #f8fafc;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+    }
+
+    /* 역산 안내 박스 */
+    .reverse-info-box {
+      margin-top: 14px;
+      padding: 12px 16px;
+      background-color: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-sub);
+      line-height: 1.6;
+    }
+
+    /* 계산 과정 아코디언 */
+    .calc-process-wrapper {
+      margin-top: 18px;
+      display: none;
+    }
+
+    .calc-process-wrapper.open {
+      display: block;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .calc-process-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-sub);
+    }
+
+    .calc-process-card h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .calc-process-card ol,
+    .calc-process-card ul {
+      padding-left: 20px;
+      margin-bottom: 8px;
+    }
+
+    .calc-process-card li {
+      margin-bottom: 4px;
+    }
+
+    .calc-process-card .math-exp {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #0f172a;
+    }
+
+    /* ==========================================================================
+       설정(Settings) 탭 전용 스타일
+       ========================================================================== */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .radio-label input[type="radio"] {
+      accent-color: var(--primary-color);
+      width: 16px;
+      height: 16px;
+    }
+
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* ==========================================================================
+       모달 (소득 구분 가이드)
+       ========================================================================== */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(2px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      max-width: 620px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      padding: 26px;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .btn-close-modal {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      line-height: 1;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    .btn-close-modal:hover {
+      color: var(--text-main);
+      background-color: #f1f5f9;
+    }
+
+    .guide-step-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #ffffff;
+      text-align: left;
+      width: 100%;
+      display: block;
+    }
+
+    .guide-step-card:hover {
+      border-color: var(--primary-color);
+      background-color: var(--primary-light);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .guide-step-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .guide-step-desc {
+      font-size: 13.5px;
+      color: var(--text-sub);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .guide-step-ex {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: #f8fafc;
+      padding: 6px 10px;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .modal-footer-note {
+      font-size: 12.5px;
+      color: var(--warning-color);
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+
+    /* 토스트 알림 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      z-index: 2000;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      opacity: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* 고정 푸터 */
+    footer {
+      max-width: 860px;
+      margin: 32px auto 0;
+      text-align: center;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .footer-disclaimer {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ==========================================================================
+       인쇄 전용 스타일 (결과만 깔끔하게 A4 한 장에 출력)
+       ========================================================================== */
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+        font-size: 12pt;
+        color: #000000;
+      }
+      .container {
+        max-width: 100%;
+      }
+      header,
+      .tabs-nav,
+      .btn-guide,
+      .action-buttons,
+      .segmented-control,
+      .form-group,
+      .checkbox-label,
+      .detail-table-wrapper,
+      .btn-add-row,
+      .settings-actions,
+      .modal-backdrop,
+      .toast,
+      .alert-box {
+        display: none !important;
+      }
+      .tab-pane {
+        display: none !important;
+      }
+      .tab-pane.active {
+        display: block !important;
+      }
+      .card {
+        border: none;
+        padding: 0;
+        box-shadow: none;
+        margin-bottom: 12px;
+      }
+      .result-section {
+        border: 2px solid #000000;
+        padding: 16px;
+        box-shadow: none;
+        margin: 0;
+      }
+      .highlight-net-box {
+        border: 1px solid #000000;
+        background: #f3f4f6 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .result-table {
+        border: 1px solid #000000;
+      }
+      .result-table th, .result-table td {
+        border: 1px solid #cccccc;
+        padding: 8px 10px;
+      }
+      .calc-process-wrapper {
+        display: block !important;
+        border-top: 1px solid #000000;
+        padding-top: 12px;
+        margin-top: 12px;
+      }
+      .calc-process-card {
+        background: #fafafa !important;
+        border: 1px solid #cccccc;
+      }
+      .print-header {
+        display: block !important;
+        margin-bottom: 20px;
+        text-align: center;
+        border-bottom: 2px solid #000000;
+        padding-bottom: 10px;
+      }
+      .print-header h2 {
+        font-size: 20pt;
+        margin-bottom: 6px;
+      }
+      .print-header p {
+        font-size: 11pt;
+        color: #555555;
+      }
+      footer {
+        margin-top: 24px;
+        border-top: 1px solid #000000;
+      }
+    }
+
+    .print-header {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 인쇄 전용 헤더 -->
+  <div class="print-header">
+    <h2>원천징수 세액 계산서</h2>
+    <p>본 출력물은 세무 상담 및 참고용으로 산출된 원천징수 명세서입니다.</p>
+  </div>
+
+  <div class="container">
+    <!-- 상단 헤더 -->
+    <header>
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-icon">🧾</div>
+          <div class="brand-text">
+            <h1>원천징수 간편 계산기</h1>
+            <p>세무사무소 실무용 · 일용직 · 사업소득(3.3%) · 기타소득(8.8%)</p>
+          </div>
+        </div>
+        <button type="button" class="btn-guide" id="btnOpenGuide">
+          <span>❓ 어떤 소득인지 모르겠어요</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 상단 탭 4개 -->
+    <nav class="tabs-nav" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="tab-daily" role="tab" aria-selected="true">
+        <span>👷 일용직</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-business" role="tab" aria-selected="false">
+        <span>💼 사업소득 3.3%</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-other" role="tab" aria-selected="false">
+        <span>🎤 기타소득 8.8%</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-settings" role="tab" aria-selected="false">
+        <span>⚙️ 설정</span>
+      </button>
+    </nav>
+
+    <!-- ====================================================================
+         탭 1: 일용근로소득
+         ==================================================================== -->
+    <div id="tab-daily" class="tab-pane active" role="tabpanel">
+      <!-- 경고 문구 고정 표시 -->
+      <div class="alert-box alert-warning">
+        <span class="alert-icon">⚠️</span>
+        <div>
+          <strong>주의:</strong> 같은 사업장에서 3개월(건설업 1년) 이상 계속 근무하면 일용직이 아닌 일반 근로자로 처리해야 합니다.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">👷 일용직 소득세 계산</h2>
+
+        <!-- 입력 방식 선택 (간단 / 상세) -->
+        <div class="segmented-control" role="group" aria-label="입력 방식 선택">
+          <button type="button" class="segment-btn active" id="btnDailySimple">간단 입력 (일당 동일)</button>
+          <button type="button" class="segment-btn" id="btnDailyDetail">상세 입력 (날짜별 일당)</button>
+        </div>
+
+        <!-- 1일 비과세 금액 (공통) -->
+        <div class="form-group">
+          <label class="form-label" for="dailyNonTaxable">
+            1일 비과세 금액 <span class="sub-desc">(식대 등 비과세 소득, 기본값 0원)</span>
+          </label>
+          <div class="input-wrapper">
+            <input type="text" id="dailyNonTaxable" class="form-control" value="0" inputmode="numeric" placeholder="0">
+            <span class="input-unit">원</span>
+          </div>
+          <div id="err-dailyNonTaxable" class="error-msg">0 이상의 올바른 숫자를 입력해 주세요.</div>
+        </div>
+
+        <!-- 간단 입력 폼 -->
+        <div id="dailySimpleForm">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="dailyWage">1일 일당 (세전)</label>
+              <div class="input-wrapper">
+                <input type="text" id="dailyWage" class="form-control" value="200,000" inputmode="numeric" placeholder="예: 200,000">
+                <span class="input-unit">원</span>
+              </div>
+              <div id="err-dailyWage" class="error-msg">1일 일당을 올바르게 입력해 주세요.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="dailyDays">근무일수</label>
+              <div class="input-wrapper">
+                <input type="text" id="dailyDays" class="form-control" value="1" inputmode="numeric" placeholder="예: 1">
+                <span class="input-unit">일</span>
+              </div>
+              <div id="err-dailyDays" class="error-msg">1 이상의 근무일수를 입력해 주세요.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 상세 입력 폼 -->
+        <div id="dailyDetailForm" style="display: none;">
+          <div class="detail-table-wrapper">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">근무일/차수</th>
+                  <th>1일 일당 (세전)</th>
+                  <th style="width: 15%; text-align: center;">삭제</th>
+                </tr>
+              </thead>
+              <tbody id="dailyDetailTbody">
+                <!-- 동적 행 생성 -->
+              </tbody>
+            </table>
+          </div>
+          <button type="button" class="btn-add-row" id="btnAddDailyRow">
+            <span>+ 근무일 일당 추가</span>
+          </button>
+        </div>
+
+        <!-- 결과 영역 -->
+        <div class="result-section">
+          <div class="result-header">
+            <div class="result-title-wrap">
+              <span class="result-title">계산 결과</span>
+              <span id="dailySmallTaxBadge" class="badge badge-success" style="display: none;">소액부징수 적용 (1,000원 미만)</span>
+            </div>
+            <div class="action-buttons">
+              <button type="button" class="btn btn-outline" id="btnToggleDailyProcess">🔍 계산 과정 보기</button>
+              <button type="button" class="btn btn-primary" id="btnCopyDailyResult">📋 결과 복사</button>
+              <button type="button" class="btn btn-outline" onclick="window.print()">🖨️ 인쇄</button>
+            </div>
+          </div>
+
+          <!-- 큰 숫자 실지급액 -->
+          <div class="highlight-net-box">
+            <span class="label">실지급액 (세후)</span>
+            <div class="amount-wrap">
+              <span class="amount" id="resDailyNet">0</span>
+              <span class="unit">원</span>
+            </div>
+          </div>
+
+          <!-- 결과 요약 표 -->
+          <table class="result-table">
+            <tbody>
+              <tr>
+                <th>총 지급액 (세전)</th>
+                <td id="resDailyGross">0원</td>
+              </tr>
+              <tr>
+                <th>소득세</th>
+                <td id="resDailyIncomeTax">0원</td>
+              </tr>
+              <tr>
+                <th>지방소득세 (소득세의 10%)</th>
+                <td id="resDailyLocalTax">0원</td>
+              </tr>
+              <tr class="total-tax-row">
+                <th>원천징수 세액 합계</th>
+                <td id="resDailyTotalTax">0원</td>
+              </tr>
+              <tr class="net-row">
+                <th>차인지급액 (실지급액)</th>
+                <td id="resDailyNetTable">0원</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 계산 과정 풀이 -->
+          <div id="dailyProcessWrapper" class="calc-process-wrapper">
+            <div class="calc-process-card" id="dailyProcessContent">
+              <!-- JS로 동적 상세 수식 렌더링 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         탭 2: 사업소득 (인적용역 3.3%)
+         ==================================================================== -->
+    <div id="tab-business" class="tab-pane" role="tabpanel">
+      <!-- 안내 박스 -->
+      <div class="alert-box alert-info">
+        <span class="alert-icon">ℹ️</span>
+        <div>
+          <div>• 정부 세제개편안에 따라 <strong>2027.1.1. 이후 지급분부터 2.2%(소득세 2%)로 변경</strong>될 수 있습니다. 국회 통과 여부를 확인한 뒤 [설정]에서 세율을 변경하세요.</div>
+          <div style="margin-top: 4px;">• 보험설계사·방문판매원 등 연말정산 대상 사업소득자는 별도 기준이 적용될 수 있습니다.</div>
+          <div style="margin-top: 4px;">• 2024.7.1. 이후 지급분부터 계속·반복 인적용역 사업소득은 <strong>소액부징수가 적용되지 않아</strong> 세액이 1,000원 미만이어도 그대로 징수합니다.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">💼 사업소득(3.3%) 세액 계산</h2>
+
+        <!-- 모드 선택 -->
+        <div class="segmented-control" role="group" aria-label="사업소득 계산 모드">
+          <button type="button" class="segment-btn active" id="btnBizForward">세전 → 세후 계산</button>
+          <button type="button" class="segment-btn" id="btnBizReverse">세후 → 세전 역산</button>
+        </div>
+
+        <!-- 세전 입력 폼 -->
+        <div id="bizForwardForm">
+          <div class="form-group">
+            <label class="form-label" for="bizGrossInput">지급액 (세전)</label>
+            <div class="input-wrapper">
+              <input type="text" id="bizGrossInput" class="form-control" value="1,000,000" inputmode="numeric" placeholder="예: 1,000,000">
+              <span class="input-unit">원</span>
+            </div>
+            <div id="err-bizGross" class="error-msg">지급액(세전)을 올바르게 입력해 주세요.</div>
+          </div>
+        </div>
+
+        <!-- 세후 역산 폼 -->
+        <div id="bizReverseForm" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="bizNetInput">
+              희망 실지급액 (세후)
+              <span class="sub-desc">(통장에 입금할 목표 금액)</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="bizNetInput" class="form-control" value="967,000" inputmode="numeric" placeholder="예: 967,000">
+              <span class="input-unit">원</span>
+            </div>
+            <div id="err-bizNet" class="error-msg">희망 실지급액(세후)을 올바르게 입력해 주세요.</div>
+          </div>
+        </div>
+
+        <!-- 결과 영역 -->
+        <div class="result-section">
+          <div class="result-header">
+            <div class="result-title-wrap">
+              <span class="result-title">계산 결과</span>
+              <span id="bizReverseBadge" class="badge badge-warning" style="display: none;">역산 결과 (가장 작은 세전 금액)</span>
+            </div>
+            <div class="action-buttons">
+              <button type="button" class="btn btn-outline" id="btnToggleBizProcess">🔍 계산 과정 보기</button>
+              <button type="button" class="btn btn-primary" id="btnCopyBizResult">📋 결과 복사</button>
+              <button type="button" class="btn btn-outline" onclick="window.print()">🖨️ 인쇄</button>
+            </div>
+          </div>
+
+          <!-- 큰 숫자 결과 강조 -->
+          <div class="highlight-net-box" id="bizHighlightBox">
+            <span class="label" id="bizHighlightLabel">실지급액 (세후)</span>
+            <div class="amount-wrap">
+              <span class="amount" id="resBizMainAmount">0</span>
+              <span class="unit">원</span>
+            </div>
+          </div>
+
+          <!-- 역산 안내 박스 -->
+          <div id="bizReverseNotice" class="reverse-info-box" style="display: none;"></div>
+
+          <!-- 결과 표 -->
+          <table class="result-table">
+            <tbody>
+              <tr>
+                <th>지급액 (세전)</th>
+                <td id="resBizGross">0원</td>
+              </tr>
+              <tr>
+                <th>소득세 (<span id="resBizTaxRateText">3%</span>)</th>
+                <td id="resBizIncomeTax">0원</td>
+              </tr>
+              <tr>
+                <th>지방소득세 (소득세의 10%)</th>
+                <td id="resBizLocalTax">0원</td>
+              </tr>
+              <tr class="total-tax-row">
+                <th>원천징수 세액 합계 (<span id="resBizTotalRateText">3.3%</span>)</th>
+                <td id="resBizTotalTax">0원</td>
+              </tr>
+              <tr class="net-row">
+                <th>실지급액 (세후)</th>
+                <td id="resBizNet">0원</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 계산 과정 풀이 -->
+          <div id="bizProcessWrapper" class="calc-process-wrapper">
+            <div class="calc-process-card" id="bizProcessContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         탭 3: 기타소득 (일시적 인적용역 8.8%)
+         ==================================================================== -->
+    <div id="tab-other" class="tab-pane" role="tabpanel">
+      <!-- 안내 박스 -->
+      <div class="alert-box alert-info">
+        <span class="alert-icon">ℹ️</span>
+        <div>
+          <div>• 상금·경품 등은 60% 필요경비가 적용되지 않을 수 있습니다.</div>
+          <div style="margin-top: 4px;">• <strong>연간 기타소득금액 300만 원 초과 시</strong> 종합소득세 합산과세 대상입니다.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">🎤 기타소득(8.8%) 세액 계산</h2>
+
+        <!-- 모드 선택 -->
+        <div class="segmented-control" role="group" aria-label="기타소득 계산 모드">
+          <button type="button" class="segment-btn active" id="btnOtherForward">세전 → 세후 계산</button>
+          <button type="button" class="segment-btn" id="btnOtherReverse">세후 → 세전 역산</button>
+        </div>
+
+        <!-- 필요경비 선택 옵션 -->
+        <div class="form-group">
+          <label class="checkbox-label" for="otherDeemedExpenseCheck">
+            <input type="checkbox" id="otherDeemedExpenseCheck" checked>
+            <span><span id="labelDeemedRate">60%</span> 의제 필요경비 적용 (강연료·원고료·자문료 등)</span>
+          </label>
+        </div>
+
+        <!-- 실제 경비 입력창 (체크 해제 시 활성화) -->
+        <div class="form-group" id="otherActualExpenseGroup" style="display: none;">
+          <label class="form-label" for="otherActualExpenseInput">실제 필요경비 직접 입력</label>
+          <div class="input-wrapper">
+            <input type="text" id="otherActualExpenseInput" class="form-control" value="0" inputmode="numeric" placeholder="0">
+            <span class="input-unit">원</span>
+          </div>
+          <div id="err-otherActualExpense" class="error-msg">실제 필요경비를 올바르게 입력해 주세요.</div>
+        </div>
+
+        <!-- 세전 입력 폼 -->
+        <div id="otherForwardForm">
+          <div class="form-group">
+            <label class="form-label" for="otherGrossInput">지급액 (세전)</label>
+            <div class="input-wrapper">
+              <input type="text" id="otherGrossInput" class="form-control" value="1,000,000" inputmode="numeric" placeholder="예: 1,000,000">
+              <span class="input-unit">원</span>
+            </div>
+            <div id="err-otherGross" class="error-msg">지급액(세전)을 올바르게 입력해 주세요.</div>
+          </div>
+        </div>
+
+        <!-- 세후 역산 폼 -->
+        <div id="otherReverseForm" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="otherNetInput">
+              희망 실지급액 (세후)
+              <span class="sub-desc">(통장에 입금할 목표 금액)</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="otherNetInput" class="form-control" value="912,000" inputmode="numeric" placeholder="예: 912,000">
+              <span class="input-unit">원</span>
+            </div>
+            <div id="err-otherNet" class="error-msg">희망 실지급액(세후)을 올바르게 입력해 주세요.</div>
+          </div>
+        </div>
+
+        <!-- 결과 영역 -->
+        <div class="result-section">
+          <div class="result-header">
+            <div class="result-title-wrap">
+              <span class="result-title">계산 결과</span>
+              <span id="otherTaxMinimumBadge" class="badge badge-success" style="display: none;">과세최저한 적용 (세금 0원)</span>
+              <span id="otherReverseBadge" class="badge badge-warning" style="display: none;">역산 결과</span>
+            </div>
+            <div class="action-buttons">
+              <button type="button" class="btn btn-outline" id="btnToggleOtherProcess">🔍 계산 과정 보기</button>
+              <button type="button" class="btn btn-primary" id="btnCopyOtherResult">📋 결과 복사</button>
+              <button type="button" class="btn btn-outline" onclick="window.print()">🖨️ 인쇄</button>
+            </div>
+          </div>
+
+          <!-- 큰 숫자 결과 강조 -->
+          <div class="highlight-net-box" id="otherHighlightBox">
+            <span class="label" id="otherHighlightLabel">실지급액 (세후)</span>
+            <div class="amount-wrap">
+              <span class="amount" id="resOtherMainAmount">0</span>
+              <span class="unit">원</span>
+            </div>
+          </div>
+
+          <!-- 역산 안내 박스 -->
+          <div id="otherReverseNotice" class="reverse-info-box" style="display: none;"></div>
+
+          <!-- 결과 표 -->
+          <table class="result-table">
+            <tbody>
+              <tr>
+                <th>지급액 (세전)</th>
+                <td id="resOtherGross">0원</td>
+              </tr>
+              <tr>
+                <th>필요경비</th>
+                <td id="resOtherExpense">0원</td>
+              </tr>
+              <tr>
+                <th>기타소득금액 (세전 − 필요경비)</th>
+                <td id="resOtherIncomeAmount">0원</td>
+              </tr>
+              <tr>
+                <th>소득세 (<span id="resOtherTaxRateText">20%</span>)</th>
+                <td id="resOtherIncomeTax">0원</td>
+              </tr>
+              <tr>
+                <th>지방소득세 (소득세의 10%)</th>
+                <td id="resOtherLocalTax">0원</td>
+              </tr>
+              <tr class="total-tax-row">
+                <th>원천징수 세액 합계</th>
+                <td id="resOtherTotalTax">0원</td>
+              </tr>
+              <tr class="net-row">
+                <th>실지급액 (세후)</th>
+                <td id="resOtherNet">0원</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 계산 과정 풀이 -->
+          <div id="otherProcessWrapper" class="calc-process-wrapper">
+            <div class="calc-process-card" id="otherProcessContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         탭 4: 설정 (Settings)
+         ==================================================================== -->
+    <div id="tab-settings" class="tab-pane" role="tabpanel">
+      <!-- 상단 안내 -->
+      <div class="alert-box alert-info">
+        <span class="alert-icon">ℹ️</span>
+        <div>
+          세율은 세법 개정으로 바뀔 수 있습니다. 국세청 홈택스에서 확인 후 수정하세요.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">⚙️ 원천징수 계산 기준값 설정</h2>
+
+        <div class="settings-grid">
+          <div class="form-group">
+            <label class="form-label" for="cfgDailyDeduction">일용직 1일 공제액</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgDailyDeduction" class="form-control" inputmode="numeric">
+              <span class="input-unit">원</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgDailyTaxRate">일용직 세율</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgDailyTaxRate" class="form-control" inputmode="numeric">
+              <span class="input-unit">%</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgTaxCreditRate">근로소득세액공제율</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgTaxCreditRate" class="form-control" inputmode="numeric">
+              <span class="input-unit">%</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgSmallTaxLimit">소액부징수 기준 (미만 시 면제)</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgSmallTaxLimit" class="form-control" inputmode="numeric">
+              <span class="input-unit">원</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgBusinessTaxRate">사업소득 원천징수세율</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgBusinessTaxRate" class="form-control" inputmode="numeric">
+              <span class="input-unit">%</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgOtherTaxRate">기타소득 원천징수세율</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgOtherTaxRate" class="form-control" inputmode="numeric">
+              <span class="input-unit">%</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgDeemedExpenseRate">의제 필요경비율</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgDeemedExpenseRate" class="form-control" inputmode="numeric">
+              <span class="input-unit">%</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgTaxMinimumStandard">과세최저한 기준 (기타소득금액)</label>
+            <div class="input-wrapper">
+              <input type="text" id="cfgTaxMinimumStandard" class="form-control" inputmode="numeric">
+              <span class="input-unit">원 이하</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label">세액 절사 단위</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="cfgTruncateUnit" value="10" checked>
+              <span>10원 미만 절사 (표준)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="cfgTruncateUnit" value="1">
+              <span>1원 미만 절사 (원 단위)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button type="button" class="btn btn-outline" id="btnResetSettings">🔄 기본값으로 초기화</button>
+          <button type="button" class="btn btn-primary" id="btnSaveSettings">💾 설정 저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 고정 면책 조항 -->
+    <footer>
+      <p class="footer-disclaimer">
+        ※ 본 도구는 참고용이며, 최종 세액은 홈택스 및 세무 전문가 확인이 필요합니다.
+      </p>
+    </footer>
+  </div>
+
+  <!-- ======================================================================
+       소득 구분 가이드 모달 ("어떤 소득인지 모르겠어요")
+       ====================================================================== -->
+  <div class="modal-backdrop" id="guideModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">🧭 소득 종류 간편 판정 가이드</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseGuide">&times;</button>
+      </div>
+
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
+        상황에 해당하는 항목을 클릭하시면 해당 계산기로 바로 이동합니다.
+      </p>
+
+      <!-- 질문 1: 일용직 -->
+      <button type="button" class="guide-step-card" data-target-tab="tab-daily">
+        <div class="guide-step-title">
+          <span>① 일용근로소득 (일용직)</span>
+          <span style="color: var(--primary-color); font-size: 13px;">선택하기 →</span>
+        </div>
+        <div class="guide-step-desc">
+          고용계약을 맺고 일한 날(시간)을 기준으로 일당을 지급받나요?
+        </div>
+        <div class="guide-step-ex">
+          📌 예시: 건설현장 일용근로자, 물류센터 일일 알바, 단기 행사 보조 등
+        </div>
+      </button>
+
+      <!-- 질문 2: 사업소득 3.3% -->
+      <button type="button" class="guide-step-card" data-target-tab="tab-business">
+        <div class="guide-step-title">
+          <span>② 사업소득 (인적용역 3.3%)</span>
+          <span style="color: var(--primary-color); font-size: 13px;">선택하기 →</span>
+        </div>
+        <div class="guide-step-desc">
+          고용관계 없이 독립된 자격으로 <strong>계속적·반복적</strong>으로 용역을 제공하나요?
+        </div>
+        <div class="guide-step-ex">
+          📌 예시: 프리랜서 개발자/디자이너, 학원 강사, 유튜버, 작가, 전문용역 등
+        </div>
+      </button>
+
+      <!-- 질문 3: 기타소득 8.8% -->
+      <button type="button" class="guide-step-card" data-target-tab="tab-other">
+        <div class="guide-step-title">
+          <span>③ 기타소득 (일시적 인적용역 8.8%)</span>
+          <span style="color: var(--primary-color); font-size: 13px;">선택하기 →</span>
+        </div>
+        <div class="guide-step-desc">
+          고용관계 없이 <strong>일시적·우발적으로 1회성</strong> 강연, 원고, 자문 등을 제공했나요?
+        </div>
+        <div class="guide-step-ex">
+          📌 예시: 1회성 특강/강연료, 사보 기고 원고료, 단발성 자문료, 심사 수당 등
+        </div>
+      </button>
+
+      <div class="modal-footer-note">
+        ⚠️ 최종 판단은 계약 내용의 실질과 구체적 사실관계(종속성·계속성)로 결정됩니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 메시지 -->
+  <div id="toast" class="toast">
+    <span>📋</span>
+    <span id="toastMsg">클립보드에 복사되었습니다!</span>
+  </div>
+
+  <!-- ======================================================================
+       스크립트 로직 (순수 JavaScript ES6)
+       ====================================================================== -->
+  <script>
+    /**
+     * 기본 세법 기준값 및 세율 (원천징수 기본 설정)
+     * 세법 개정 시 이 객체의 값을 기본 베이스로 사용합니다.
+     */
+    const DEFAULT_SETTINGS = {
+      dailyDeduction: 150000,      // 일용직 1일 근로소득공제액 (150,000원)
+      dailyTaxRate: 0.06,          // 일용직 기본 소득세율 (6%)
+      taxCreditRate: 0.55,         // 근로소득 세액공제율 (55% 산출세액 감면)
+      smallTaxLimit: 1000,         // 소액부징수 기준액 (소득세 1,000원 미만 면제)
+      businessTaxRate: 0.03,       // 사업소득 기본 소득세율 (3%, 지방세 포함 3.3%)
+      otherTaxRate: 0.20,          // 기타소득 원천징수세율 (20%, 지방세 포함 22%)
+      deemedExpenseRate: 0.60,     // 기타소득 의제 필요경비율 (60%, 실효세율 8.8%)
+      taxMinimumStandard: 50000,   // 기타소득 과세최저한 기준 (기타소득금액 50,000원 이하 면제)
+      truncateUnit: 10             // 세액 절사 단위 (10원 미만 절사, 설정에서 1원 선택 가능)
+    };
+
+    const STORAGE_KEY = 'tax_calc_settings_v1';
+
+    // 현재 활성화된 세법 설정값
+    let currentSettings = { ...DEFAULT_SETTINGS };
+
+    // 일용직 상세입력 행 데이터
+    let dailyDetailRows = [
+      { id: 1, label: '1일차', wage: 200000 }
+    ];
+    let nextDetailRowId = 2;
+
+    /* ==========================================================================
+       설정 관리 (localStorage 입출력 - try/catch 필수)
+       ========================================================================== */
+    function loadSettings() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          currentSettings = { ...DEFAULT_SETTINGS, ...parsed };
+        } else {
+          currentSettings = { ...DEFAULT_SETTINGS };
+        }
+      } catch (err) {
+        console.error('설정 불러오기 실패, 기본값을 사용합니다:', err);
+        currentSettings = { ...DEFAULT_SETTINGS };
+      }
+    }
+
+    function saveSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentSettings));
+        showToast('설정이 성공적으로 저장되었습니다.');
+      } catch (err) {
+        console.error('설정 저장 실패:', err);
+        showToast('설정 저장 중 오류가 발생했습니다.');
+      }
+    }
+
+    function resetSettingsToDefault() {
+      currentSettings = { ...DEFAULT_SETTINGS };
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (err) {
+        console.error('설정 초기화 오류:', err);
+      }
+      populateSettingsForm();
+      showToast('설정이 기본값으로 초기화되었습니다.');
+      updateAllCalculations();
+    }
+
+    function populateSettingsForm() {
+      document.getElementById('cfgDailyDeduction').value = formatNumber(currentSettings.dailyDeduction);
+      document.getElementById('cfgDailyTaxRate').value = (currentSettings.dailyTaxRate * 100).toString();
+      document.getElementById('cfgTaxCreditRate').value = (currentSettings.taxCreditRate * 100).toString();
+      document.getElementById('cfgSmallTaxLimit').value = formatNumber(currentSettings.smallTaxLimit);
+      document.getElementById('cfgBusinessTaxRate').value = (currentSettings.businessTaxRate * 100).toString();
+      document.getElementById('cfgOtherTaxRate').value = (currentSettings.otherTaxRate * 100).toString();
+      document.getElementById('cfgDeemedExpenseRate').value = (currentSettings.deemedExpenseRate * 100).toString();
+      document.getElementById('cfgTaxMinimumStandard').value = formatNumber(currentSettings.taxMinimumStandard);
+
+      const unitRadios = document.getElementsByName('cfgTruncateUnit');
+      for (const radio of unitRadios) {
+        radio.checked = parseInt(radio.value, 10) === currentSettings.truncateUnit;
+      }
+
+      // UI 라벨 갱신
+      document.getElementById('labelDeemedRate').textContent = `${currentSettings.deemedExpenseRate * 100}%`;
+      document.getElementById('resBizTaxRateText').textContent = `${(currentSettings.businessTaxRate * 100).toFixed(1).replace(/\.0$/, '')}%`;
+      document.getElementById('resBizTotalRateText').textContent = `${(currentSettings.businessTaxRate * 110).toFixed(1).replace(/\.0$/, '')}%`;
+      document.getElementById('resOtherTaxRateText').textContent = `${(currentSettings.otherTaxRate * 100).toFixed(1).replace(/\.0$/, '')}%`;
+    }
+
+    function readSettingsFromForm() {
+      const dailyDeduction = parseNumber(document.getElementById('cfgDailyDeduction').value);
+      const dailyTaxRate = parseFloat(document.getElementById('cfgDailyTaxRate').value) / 100;
+      const taxCreditRate = parseFloat(document.getElementById('cfgTaxCreditRate').value) / 100;
+      const smallTaxLimit = parseNumber(document.getElementById('cfgSmallTaxLimit').value);
+      const businessTaxRate = parseFloat(document.getElementById('cfgBusinessTaxRate').value) / 100;
+      const otherTaxRate = parseFloat(document.getElementById('cfgOtherTaxRate').value) / 100;
+      const deemedExpenseRate = parseFloat(document.getElementById('cfgDeemedExpenseRate').value) / 100;
+      const taxMinimumStandard = parseNumber(document.getElementById('cfgTaxMinimumStandard').value);
+
+      let truncateUnit = 10;
+      const unitRadios = document.getElementsByName('cfgTruncateUnit');
+      for (const radio of unitRadios) {
+        if (radio.checked) {
+          truncateUnit = parseInt(radio.value, 10);
+          break;
+        }
+      }
+
+      if (isNaN(dailyDeduction) || dailyDeduction < 0) return alert('일용직 1일 공제액을 올바르게 입력하세요.');
+      if (isNaN(dailyTaxRate) || dailyTaxRate < 0) return alert('일용직 세율을 올바르게 입력하세요.');
+      if (isNaN(taxCreditRate) || taxCreditRate < 0) return alert('세액공제율을 올바르게 입력하세요.');
+      if (isNaN(smallTaxLimit) || smallTaxLimit < 0) return alert('소액부징수 기준액을 올바르게 입력하세요.');
+      if (isNaN(businessTaxRate) || businessTaxRate < 0) return alert('사업소득 세율을 올바르게 입력하세요.');
+      if (isNaN(otherTaxRate) || otherTaxRate < 0) return alert('기타소득 세율을 올바르게 입력하세요.');
+      if (isNaN(deemedExpenseRate) || deemedExpenseRate < 0) return alert('의제 필요경비율을 올바르게 입력하세요.');
+      if (isNaN(taxMinimumStandard) || taxMinimumStandard < 0) return alert('과세최저한 기준을 올바르게 입력하세요.');
+
+      currentSettings = {
+        dailyDeduction,
+        dailyTaxRate,
+        taxCreditRate,
+        smallTaxLimit,
+        businessTaxRate,
+        otherTaxRate,
+        deemedExpenseRate,
+        taxMinimumStandard,
+        truncateUnit
+      };
+
+      saveSettings();
+      populateSettingsForm();
+      updateAllCalculations();
+    }
+
+    /* ==========================================================================
+       수학 및 서식 유틸리티 함수
+       ========================================================================== */
+    /**
+     * 절사 계산 (10원 미만 절사 또는 1원 미만 절사)
+     */
+    function truncateTax(amount, unit = currentSettings.truncateUnit) {
+      if (amount <= 0) return 0;
+      if (unit === 10) {
+        return Math.floor(amount / 10) * 10;
+      }
+      return Math.floor(amount);
+    }
+
+    /**
+     * 숫자 천 단위 쉼표 포맷팅
+     */
+    function formatNumber(val) {
+      if (val === null || val === undefined || isNaN(val)) return '0';
+      return Math.round(val).toLocaleString('ko-KR');
+    }
+
+    /**
+     * 쉼표가 포함된 문자열을 정수로 변환
+     */
+    function parseNumber(str) {
+      if (!str) return 0;
+      const clean = String(str).replace(/[^\d-]/g, '');
+      const parsed = parseInt(clean, 10);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+
+    /**
+     * 원 단위 포맷팅 (예: "1,000,000원")
+     */
+    function formatWon(val) {
+      return `${formatNumber(val)}원`;
+    }
+
+    /**
+     * 토스트 팝업 표시
+     */
+    let toastTimeout = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = message;
+      toast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    /**
+     * 클립보드 복사 (엑셀용 탭 구분 텍스트)
+     */
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('클립보드에 복사되었습니다! (엑셀 붙여넣기 가능)');
+        }).catch(() => {
+          fallbackCopyText(text);
+        });
+      } else {
+        fallbackCopyText(text);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('클립보드에 복사되었습니다! (엑셀 붙여넣기 가능)');
+      } catch (err) {
+        showToast('복사에 실패했습니다. 수동으로 복사해 주세요.');
+      }
+      document.body.removeChild(textArea);
+    }
+
+    /* ==========================================================================
+       탭 1: 일용직 계산 로직
+       ========================================================================== */
+    let dailyInputMode = 'simple'; // 'simple' | 'detail'
+
+    function calculateDaily() {
+      const nonTaxableInput = document.getElementById('dailyNonTaxable');
+      const nonTaxable = parseNumber(nonTaxableInput.value);
+
+      let wageList = [];
+      let hasError = false;
+
+      if (dailyInputMode === 'simple') {
+        const wageInput = document.getElementById('dailyWage');
+        const daysInput = document.getElementById('dailyDays');
+        const wage = parseNumber(wageInput.value);
+        const days = parseNumber(daysInput.value);
+
+        // 유효성 검사
+        if (wage <= 0 || isNaN(wage)) {
+          showInputError('err-dailyWage', 'dailyWage', true);
+          hasError = true;
+        } else {
+          showInputError('err-dailyWage', 'dailyWage', false);
+        }
+
+        if (days <= 0 || isNaN(days)) {
+          showInputError('err-dailyDays', 'dailyDays', true);
+          hasError = true;
+        } else {
+          showInputError('err-dailyDays', 'dailyDays', false);
+        }
+
+        if (hasError) return;
+
+        for (let i = 1; i <= days; i++) {
+          wageList.push({ label: `${i}일차`, wage });
+        }
+      } else {
+        // 상세 입력 모드
+        dailyDetailRows.forEach((row, idx) => {
+          const inputEl = document.getElementById(`dailyRowWage_${row.id}`);
+          const wageVal = inputEl ? parseNumber(inputEl.value) : row.wage;
+          row.wage = wageVal;
+          wageList.push({ label: row.label || `${idx + 1}일차`, wage: wageVal });
+        });
+        if (wageList.length === 0) return;
+      }
+
+      // 일별 계산 수행 (반드시 하루 단위로 계산 후 합산)
+      let totalGross = 0;
+      let totalDailyIncomeTaxRaw = 0;
+      const processSteps = [];
+
+      wageList.forEach((item, idx) => {
+        totalGross += item.wage;
+        // 1일 과세대상 일당 = max(0, 일당 - 비과세 - 150,000)
+        const taxableWage = Math.max(0, item.wage - nonTaxable - currentSettings.dailyDeduction);
+        // 1일 산출세액 = 과세대상 × 6%
+        const computedTax = taxableWage * currentSettings.dailyTaxRate;
+        // 1일 결정세액 = 산출세액 × (1 - 55%)
+        const dailyTax = computedTax * (1 - currentSettings.taxCreditRate);
+        totalDailyIncomeTaxRaw += dailyTax;
+
+        processSteps.push({
+          label: item.label,
+          wage: item.wage,
+          nonTaxable,
+          taxableWage,
+          computedTax,
+          dailyTax
+        });
+      });
+
+      // 지급 건 전체 소득세 = 일별 소득세 합계 → 10원 미만 절사
+      let rawTruncatedTax = truncateTax(totalDailyIncomeTaxRaw);
+
+      // 소액부징수 판정: 이번 지급 건 소득세 합계가 1,000원 미만이면 0원
+      let isSmallTaxExempt = false;
+      let finalIncomeTax = 0;
+      let finalLocalTax = 0;
+
+      if (rawTruncatedTax < currentSettings.smallTaxLimit) {
+        isSmallTaxExempt = true;
+        finalIncomeTax = 0;
+        finalLocalTax = 0;
+      } else {
+        isSmallTaxExempt = false;
+        finalIncomeTax = rawTruncatedTax;
+        // 지방소득세 = 소득세 × 10% → 10원 미만 절사
+        finalLocalTax = truncateTax(finalIncomeTax * 0.1);
+      }
+
+      const totalTax = finalIncomeTax + finalLocalTax;
+      const netPay = totalGross - totalTax;
+
+      // 화면 업데이트
+      document.getElementById('resDailyNet').textContent = formatNumber(netPay);
+      document.getElementById('resDailyGross').textContent = formatWon(totalGross);
+      document.getElementById('resDailyIncomeTax').textContent = formatWon(finalIncomeTax);
+      document.getElementById('resDailyLocalTax').textContent = formatWon(finalLocalTax);
+      document.getElementById('resDailyTotalTax').textContent = formatWon(totalTax);
+      document.getElementById('resDailyNetTable').textContent = formatWon(netPay);
+
+      // 소액부징수 배지 표시
+      const badge = document.getElementById('dailySmallTaxBadge');
+      if (isSmallTaxExempt && totalGross > 0) {
+        badge.style.display = 'inline-flex';
+        badge.textContent = `소액부징수 적용 (${formatNumber(currentSettings.smallTaxLimit)}원 미만 면제)`;
+      } else {
+        badge.style.display = 'none';
+      }
+
+      // 계산 과정 풀이 렌더링
+      renderDailyProcess({
+        wageList,
+        nonTaxable,
+        processSteps,
+        totalGross,
+        totalDailyIncomeTaxRaw,
+        rawTruncatedTax,
+        isSmallTaxExempt,
+        finalIncomeTax,
+        finalLocalTax,
+        totalTax,
+        netPay
+      });
+    }
+
+    function renderDailyProcess(data) {
+      const container = document.getElementById('dailyProcessContent');
+      let html = `
+        <h4>📐 일용근로소득 세액 계산 과정</h4>
+        <ol>
+          <li>
+            <strong>1일 단위 비과세 및 근로소득공제:</strong><br>
+            일용직은 하루 일당에서 비과세(${formatWon(data.nonTaxable)})와 기본 공제액 <strong>${formatWon(currentSettings.dailyDeduction)}</strong>을 먼저 차감합니다.
+          </li>
+          <li>
+            <strong>1일 소득세 계산 공식:</strong><br>
+            <span class="math-exp">1일 소득세 = max(0, 일당 − 비과세 − ${formatNumber(currentSettings.dailyDeduction)}) × ${(currentSettings.dailyTaxRate * 100)}% × (1 − ${(currentSettings.taxCreditRate * 100)}%)</span><br>
+            (※ 6% 세율 적용 후 55% 세액공제를 차감하여 실효 2.7% 적용)
+          </li>
+      `;
+
+      if (data.wageList.length <= 5) {
+        html += `<li><strong>일자별 상세 계산:</strong><ul>`;
+        data.processSteps.forEach(step => {
+          html += `
+            <li>
+              <strong>${step.label} (일당 ${formatWon(step.wage)}):</strong><br>
+              과세표준: max(0, ${formatNumber(step.wage)} - ${formatNumber(step.nonTaxable)} - ${formatNumber(currentSettings.dailyDeduction)}) = ${formatWon(step.taxableWage)}<br>
+              산출세액: ${formatNumber(step.taxableWage)} × 6% = ${formatNumber(step.computedTax)}원<br>
+              결정세액(55% 공제): ${formatNumber(step.computedTax)} × 45% = <strong>${step.dailyTax.toFixed(1)}원</strong>
+            </li>
+          `;
+        });
+        html += `</ul></li>`;
+      } else {
+        html += `
+          <li>
+            <strong>총 ${data.wageList.length}일간 근무:</strong> 각 일자별로 위 공식에 따라 하루 결정세액을 각각 계산했습니다.
+          </li>
+        `;
+      }
+
+      html += `
+        <li>
+          <strong>지급 건 전체 소득세 합계:</strong><br>
+          일별 세액 합계 = ${data.totalDailyIncomeTaxRaw.toFixed(1)}원<br>
+          절사 단위 적용(${currentSettings.truncateUnit}원 미만 절사) = <strong>${formatWon(data.rawTruncatedTax)}</strong>
+        </li>
+      `;
+
+      if (data.isSmallTaxExempt) {
+        html += `
+          <li>
+            <strong>소액부징수 적용 판정:</strong><br>
+            소득세 합계(${formatWon(data.rawTruncatedTax)})가 소액부징수 기준(${formatWon(currentSettings.smallTaxLimit)}) 미만이므로 <strong>소득세 및 지방소득세 모두 0원으로 비과세 징수</strong>됩니다.
+          </li>
+        `;
+      } else {
+        html += `
+          <li>
+            <strong>소액부징수 판정 및 지방소득세:</strong><br>
+            소득세 합계(${formatWon(data.rawTruncatedTax)})가 ${formatWon(currentSettings.smallTaxLimit)} 이상이므로 정상 징수됩니다.<br>
+            • 최종 소득세: <strong>${formatWon(data.finalIncomeTax)}</strong><br>
+            • 지방소득세: ${formatNumber(data.finalIncomeTax)} × 10% = ${formatNumber(data.finalIncomeTax * 0.1)}원 → ${currentSettings.truncateUnit}원 절사 = <strong>${formatWon(data.finalLocalTax)}</strong><br>
+            • 원천징수 합계: ${formatWon(data.totalTax)}
+          </li>
+        `;
+      }
+
+      html += `
+        <li>
+          <strong>최종 실지급액 (세후):</strong><br>
+          총 지급액(${formatWon(data.totalGross)}) − 원천징수 합계(${formatWon(data.totalTax)}) = <strong>${formatWon(data.netPay)}</strong>
+        </li>
+      </ol>`;
+
+      container.innerHTML = html;
+    }
+
+    /* ==========================================================================
+       탭 2: 사업소득 (인적용역 3.3%) 계산 로직
+       ========================================================================== */
+    let bizMode = 'forward'; // 'forward' | 'reverse'
+
+    /**
+     * 사업소득 단일 세전 금액 세액 계산 헬퍼 (역산 탐색용)
+     */
+    function computeBusinessTaxFromGross(gross) {
+      if (gross <= 0) return { gross: 0, incomeTax: 0, localTax: 0, totalTax: 0, net: 0 };
+      // 사업소득 소득세 (기본 3%)
+      const rawIncomeTax = gross * currentSettings.businessTaxRate;
+      const incomeTax = truncateTax(rawIncomeTax);
+      // 지방소득세 = 소득세 × 10% (10원 미만 절사)
+      const localTax = truncateTax(incomeTax * 0.1);
+      const totalTax = incomeTax + localTax;
+      const net = gross - totalTax;
+      return { gross, incomeTax, localTax, totalTax, net };
+    }
+
+    function calculateBusiness() {
+      let gross = 0;
+      let incomeTax = 0;
+      let localTax = 0;
+      let totalTax = 0;
+      let net = 0;
+      let reverseNotice = '';
+      let isExact = true;
+
+      const badge = document.getElementById('bizReverseBadge');
+      const noticeBox = document.getElementById('bizReverseNotice');
+
+      if (bizMode === 'forward') {
+        badge.style.display = 'none';
+        noticeBox.style.display = 'none';
+        document.getElementById('bizHighlightLabel').textContent = '실지급액 (세후)';
+
+        const grossInput = document.getElementById('bizGrossInput');
+        gross = parseNumber(grossInput.value);
+
+        if (gross <= 0 || isNaN(gross)) {
+          showInputError('err-bizGross', 'bizGrossInput', true);
+          return;
+        }
+        showInputError('err-bizGross', 'bizGrossInput', false);
+
+        const res = computeBusinessTaxFromGross(gross);
+        incomeTax = res.incomeTax;
+        localTax = res.localTax;
+        totalTax = res.totalTax;
+        net = res.net;
+
+        document.getElementById('resBizMainAmount').textContent = formatNumber(net);
+      } else {
+        // 역산 모드 (세후 → 세전)
+        badge.style.display = 'inline-flex';
+        document.getElementById('bizHighlightLabel').textContent = '계산된 세전 지급액';
+
+        const netInput = document.getElementById('bizNetInput');
+        const targetNet = parseNumber(netInput.value);
+
+        if (targetNet <= 0 || isNaN(targetNet)) {
+          showInputError('err-bizNet', 'bizNetInput', true);
+          return;
+        }
+        showInputError('err-bizNet', 'bizNetInput', false);
+
+        // 역산 탐색: 세전 - 원천징수 합계 = 세후가 정확히 맞는 가장 작은 세전 금액
+        const effectiveRate = currentSettings.businessTaxRate * 1.1;
+        const approxGross = Math.round(targetNet / (1 - effectiveRate));
+
+        // 탐색 범위 설정 (절사 단위 점프로 인한 차이를 포괄하도록 ±30,000원 윈도우)
+        const searchMin = Math.max(0, approxGross - 30000);
+        const searchMax = approxGross + 30000;
+
+        let exactMatches = [];
+        let closestGross = approxGross;
+        let minDiff = Infinity;
+
+        for (let g = searchMin; g <= searchMax; g++) {
+          const check = computeBusinessTaxFromGross(g);
+          const diff = Math.abs(check.net - targetNet);
+
+          if (check.net === targetNet) {
+            exactMatches.push(g);
+          }
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestGross = g;
+          }
+        }
+
+        if (exactMatches.length > 0) {
+          // 이론적 세전 금액(approxGross)에 가장 가깝고, 차이가 동일하면 가장 작은 세전 금액 선택
+          exactMatches.sort((a, b) => {
+            const diffA = Math.abs(a - approxGross);
+            const diffB = Math.abs(b - approxGross);
+            if (diffA !== diffB) return diffA - diffB;
+            return a - b;
+          });
+          gross = exactMatches[0];
+          const matchedRes = computeBusinessTaxFromGross(gross);
+          incomeTax = matchedRes.incomeTax;
+          localTax = matchedRes.localTax;
+          totalTax = matchedRes.totalTax;
+          net = matchedRes.net;
+          isExact = true;
+
+          noticeBox.style.display = 'block';
+          noticeBox.innerHTML = `✅ 희망 세후 금액(<strong>${formatWon(targetNet)}</strong>)과 정확히 일치하는 세전 금액(<strong>${formatWon(gross)}</strong>)을 찾았습니다.`;
+        } else {
+          // 일치하는 값이 없는 경우 (10원 절사 단차)
+          gross = closestGross;
+          const closestRes = computeBusinessTaxFromGross(gross);
+          incomeTax = closestRes.incomeTax;
+          localTax = closestRes.localTax;
+          totalTax = closestRes.totalTax;
+          net = closestRes.net;
+          isExact = false;
+
+          const diffVal = net - targetNet;
+          const diffText = diffVal > 0 ? `+${formatNumber(diffVal)}원` : `${formatNumber(diffVal)}원`;
+
+          noticeBox.style.display = 'block';
+          noticeBox.innerHTML = `⚠️ 세액 10원 단위 절사 규칙으로 인해 세후 금액이 정확히 ${formatWon(targetNet)}원이 되는 세전 금액이 없습니다.<br>
+            가장 근접한 세전 <strong>${formatWon(gross)}</strong>으로 계산되었습니다. (실지급액 ${formatWon(net)}, 차액: ${diffText})`;
+        }
+
+        document.getElementById('resBizMainAmount').textContent = formatNumber(gross);
+      }
+
+      // 화면 업데이트
+      document.getElementById('resBizGross').textContent = formatWon(gross);
+      document.getElementById('resBizIncomeTax').textContent = formatWon(incomeTax);
+      document.getElementById('resBizLocalTax').textContent = formatWon(localTax);
+      document.getElementById('resBizTotalTax').textContent = formatWon(totalTax);
+      document.getElementById('resBizNet').textContent = formatWon(net);
+
+      // 계산 과정 풀이
+      renderBusinessProcess({
+        mode: bizMode,
+        gross,
+        incomeTax,
+        localTax,
+        totalTax,
+        net,
+        isExact
+      });
+    }
+
+    function renderBusinessProcess(data) {
+      const container = document.getElementById('bizProcessContent');
+      const taxPct = (currentSettings.businessTaxRate * 100).toFixed(1).replace(/\.0$/, '');
+      const totalPct = (currentSettings.businessTaxRate * 110).toFixed(1).replace(/\.0$/, '');
+
+      let html = `
+        <h4>📐 사업소득 세액 계산 과정</h4>
+        <ol>
+          <li>
+            <strong>소액부징수 미적용 안내:</strong><br>
+            2024.7.1. 이후 지급분부터 계속·반복 인적용역 사업소득은 소액부징수(1,000원 미만 면제) 대상에서 제외되므로, <strong>세액이 1,000원 미만이어도 정상 징수</strong>합니다.
+          </li>
+          <li>
+            <strong>소득세 계산 (${taxPct}%):</strong><br>
+            <span class="math-exp">소득세 = 지급액(${formatNumber(data.gross)}원) × ${taxPct}%</span> = ${formatNumber(data.gross * currentSettings.businessTaxRate)}원<br>
+            → 절사 단위 적용(${currentSettings.truncateUnit}원 미만 절사) = <strong>${formatWon(data.incomeTax)}</strong>
+          </li>
+          <li>
+            <strong>지방소득세 계산 (소득세의 10%):</strong><br>
+            <span class="math-exp">지방소득세 = 소득세(${formatNumber(data.incomeTax)}원) × 10%</span> = ${formatNumber(data.incomeTax * 0.1)}원<br>
+            → 절사 단위 적용(${currentSettings.truncateUnit}원 미만 절사) = <strong>${formatWon(data.localTax)}</strong>
+          </li>
+          <li>
+            <strong>원천징수 합계 (실효세율 ${totalPct}%):</strong><br>
+            소득세(${formatWon(data.incomeTax)}) + 지방소득세(${formatWon(data.localTax)}) = <strong>${formatWon(data.totalTax)}</strong>
+          </li>
+          <li>
+            <strong>실지급액 (세후):</strong><br>
+            세전 지급액(${formatWon(data.gross)}) − 원천징수 세액(${formatWon(data.totalTax)}) = <strong>${formatWon(data.net)}</strong>
+          </li>
+        </ol>
+      `;
+
+      if (data.mode === 'reverse') {
+        html += `
+          <div style="margin-top: 10px; padding: 10px; background: #e2e8f0; border-radius: 4px; font-size: 13px;">
+            💡 <strong>역산 탐색 알고리즘:</strong> 목표 세후 금액을 만들기 위해 1원 단위로 세전 금액을 전수 탐색하여, 세전에서 공제액을 뺀 금액이 정확히 세후와 일치하는 가장 작은 세전 금액을 산출했습니다.
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    /* ==========================================================================
+       탭 3: 기타소득 (일시적 인적용역 8.8%) 계산 로직
+       ========================================================================== */
+    let otherMode = 'forward'; // 'forward' | 'reverse'
+
+    /**
+     * 기타소득 단일 세전 금액 세액 계산 헬퍼
+     */
+    function computeOtherTaxFromGross(gross, isDeemed, actualExp) {
+      if (gross <= 0) return { gross: 0, expense: 0, incomeAmount: 0, incomeTax: 0, localTax: 0, totalTax: 0, net: 0, isExempt: false };
+
+      // 필요경비 계산
+      let expense = 0;
+      if (isDeemed) {
+        // 의제 필요경비 60%
+        expense = Math.floor(gross * currentSettings.deemedExpenseRate);
+      } else {
+        expense = Math.min(gross, actualExp);
+      }
+
+      // 기타소득금액 = 지급액 - 필요경비
+      const incomeAmount = Math.max(0, gross - expense);
+
+      // 과세최저한 판정: 기타소득금액 50,000원 이하 시 세액 0원
+      let isExempt = false;
+      let incomeTax = 0;
+      let localTax = 0;
+
+      if (incomeAmount <= currentSettings.taxMinimumStandard) {
+        isExempt = true;
+        incomeTax = 0;
+        localTax = 0;
+      } else {
+        isExempt = false;
+        // 소득세 = 기타소득금액 × 20%
+        const rawIncomeTax = incomeAmount * currentSettings.otherTaxRate;
+        incomeTax = truncateTax(rawIncomeTax);
+        // 지방소득세 = 소득세 × 10%
+        localTax = truncateTax(incomeTax * 0.1);
+      }
+
+      const totalTax = incomeTax + localTax;
+      const net = gross - totalTax;
+
+      return { gross, expense, incomeAmount, incomeTax, localTax, totalTax, net, isExempt };
+    }
+
+    function calculateOther() {
+      const isDeemed = document.getElementById('otherDeemedExpenseCheck').checked;
+      const actualExpInput = document.getElementById('otherActualExpenseInput');
+      const actualExp = isDeemed ? 0 : parseNumber(actualExpInput.value);
+
+      let gross = 0;
+      let expense = 0;
+      let incomeAmount = 0;
+      let incomeTax = 0;
+      let localTax = 0;
+      let totalTax = 0;
+      let net = 0;
+      let isExempt = false;
+      let isExact = true;
+
+      const minBadge = document.getElementById('otherTaxMinimumBadge');
+      const revBadge = document.getElementById('otherReverseBadge');
+      const noticeBox = document.getElementById('otherReverseNotice');
+
+      if (otherMode === 'forward') {
+        revBadge.style.display = 'none';
+        noticeBox.style.display = 'none';
+        document.getElementById('otherHighlightLabel').textContent = '실지급액 (세후)';
+
+        const grossInput = document.getElementById('otherGrossInput');
+        gross = parseNumber(grossInput.value);
+
+        if (gross <= 0 || isNaN(gross)) {
+          showInputError('err-otherGross', 'otherGrossInput', true);
+          return;
+        }
+        showInputError('err-otherGross', 'otherGrossInput', false);
+
+        const res = computeOtherTaxFromGross(gross, isDeemed, actualExp);
+        expense = res.expense;
+        incomeAmount = res.incomeAmount;
+        incomeTax = res.incomeTax;
+        localTax = res.localTax;
+        totalTax = res.totalTax;
+        net = res.net;
+        isExempt = res.isExempt;
+
+        document.getElementById('resOtherMainAmount').textContent = formatNumber(net);
+      } else {
+        // 역산 모드 (세후 → 세전)
+        revBadge.style.display = 'inline-flex';
+        document.getElementById('otherHighlightLabel').textContent = '계산된 세전 지급액';
+
+        const netInput = document.getElementById('otherNetInput');
+        const targetNet = parseNumber(netInput.value);
+
+        if (targetNet <= 0 || isNaN(targetNet)) {
+          showInputError('err-otherNet', 'otherNetInput', true);
+          return;
+        }
+        showInputError('err-otherNet', 'otherNetInput', false);
+
+        // 기타소득 실효세율: 의제 60% 시 (1 - 0.6) * 0.20 * 1.1 = 8.8%
+        const effectiveRate = isDeemed ? (1 - currentSettings.deemedExpenseRate) * currentSettings.otherTaxRate * 1.1 : 0.088;
+        const approxGross = Math.round(targetNet / (1 - effectiveRate));
+
+        const searchMin = Math.max(0, approxGross - 40000);
+        const searchMax = approxGross + 40000;
+
+        let exactMatches = [];
+        let closestGross = approxGross;
+        let minDiff = Infinity;
+
+        for (let g = searchMin; g <= searchMax; g++) {
+          const check = computeOtherTaxFromGross(g, isDeemed, actualExp);
+          const diff = Math.abs(check.net - targetNet);
+
+          if (check.net === targetNet) {
+            exactMatches.push(g);
+          }
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestGross = g;
+          }
+        }
+
+        if (exactMatches.length > 0) {
+          // 이론적 세전 금액(approxGross)에 가장 가깝고, 차이가 동일하면 가장 작은 세전 금액 선택
+          exactMatches.sort((a, b) => {
+            const diffA = Math.abs(a - approxGross);
+            const diffB = Math.abs(b - approxGross);
+            if (diffA !== diffB) return diffA - diffB;
+            return a - b;
+          });
+          gross = exactMatches[0];
+          const matchedRes = computeOtherTaxFromGross(gross, isDeemed, actualExp);
+          expense = matchedRes.expense;
+          incomeAmount = matchedRes.incomeAmount;
+          incomeTax = matchedRes.incomeTax;
+          localTax = matchedRes.localTax;
+          totalTax = matchedRes.totalTax;
+          net = matchedRes.net;
+          isExempt = matchedRes.isExempt;
+          isExact = true;
+
+          noticeBox.style.display = 'block';
+          noticeBox.innerHTML = `✅ 희망 세후 금액(<strong>${formatWon(targetNet)}</strong>)과 정확히 일치하는 가장 작은 세전 금액(<strong>${formatWon(gross)}</strong>)을 찾았습니다.`;
+        } else {
+          gross = closestGross;
+          const closestRes = computeOtherTaxFromGross(gross, isDeemed, actualExp);
+          expense = closestRes.expense;
+          incomeAmount = closestRes.incomeAmount;
+          incomeTax = closestRes.incomeTax;
+          localTax = closestRes.localTax;
+          totalTax = closestRes.totalTax;
+          net = closestRes.net;
+          isExempt = closestRes.isExempt;
+          isExact = false;
+
+          const diffVal = net - targetNet;
+          const diffText = diffVal > 0 ? `+${formatNumber(diffVal)}원` : `${formatNumber(diffVal)}원`;
+
+          noticeBox.style.display = 'block';
+          noticeBox.innerHTML = `⚠️ 세액 10원 단위 절사 규칙으로 인해 세후 금액이 정확히 ${formatWon(targetNet)}원이 되는 세전 금액이 없습니다.<br>
+            가장 근접한 세전 <strong>${formatWon(gross)}</strong>으로 계산되었습니다. (실지급액 ${formatWon(net)}, 차액: ${diffText})`;
+        }
+
+        document.getElementById('resOtherMainAmount').textContent = formatNumber(gross);
+      }
+
+      // 과세최저한 배지
+      if (isExempt && gross > 0) {
+        minBadge.style.display = 'inline-flex';
+      } else {
+        minBadge.style.display = 'none';
+      }
+
+      // 화면 업데이트
+      document.getElementById('resOtherGross').textContent = formatWon(gross);
+      document.getElementById('resOtherExpense').textContent = formatWon(expense);
+      document.getElementById('resOtherIncomeAmount').textContent = formatWon(incomeAmount);
+      document.getElementById('resOtherIncomeTax').textContent = formatWon(incomeTax);
+      document.getElementById('resOtherLocalTax').textContent = formatWon(localTax);
+      document.getElementById('resOtherTotalTax').textContent = formatWon(totalTax);
+      document.getElementById('resOtherNet').textContent = formatWon(net);
+
+      // 계산 과정 풀이
+      renderOtherProcess({
+        mode: otherMode,
+        gross,
+        isDeemed,
+        expense,
+        incomeAmount,
+        incomeTax,
+        localTax,
+        totalTax,
+        net,
+        isExempt
+      });
+    }
+
+    function renderOtherProcess(data) {
+      const container = document.getElementById('otherProcessContent');
+      const deemedPct = (currentSettings.deemedExpenseRate * 100);
+      const taxPct = (currentSettings.otherTaxRate * 100);
+
+      let html = `
+        <h4>📐 기타소득 세액 계산 과정</h4>
+        <ol>
+          <li>
+            <strong>필요경비 차감:</strong><br>
+            ${data.isDeemed
+              ? `의제 필요경비 ${deemedPct}% 적용: 지급액(${formatNumber(data.gross)}원) × ${deemedPct}% = <strong>${formatWon(data.expense)}</strong>`
+              : `실제 지출 필요경비 직접 차감: <strong>${formatWon(data.expense)}</strong>`
+            }
+          </li>
+          <li>
+            <strong>기타소득금액 (과세표준):</strong><br>
+            <span class="math-exp">기타소득금액 = 지급액(${formatNumber(data.gross)}원) − 필요경비(${formatNumber(data.expense)}원)</span> = <strong>${formatWon(data.incomeAmount)}</strong>
+          </li>
+      `;
+
+      if (data.isExempt) {
+        html += `
+          <li>
+            <strong>과세최저한 적용 판정:</strong><br>
+            건별 기타소득금액(<strong>${formatWon(data.incomeAmount)}</strong>)이 과세최저한 기준인 <strong>${formatWon(currentSettings.taxMinimumStandard)} 이하</strong>에 해당하므로, <strong>원천징수세액이 전액 0원으로 면제</strong>됩니다.
+          </li>
+          <li>
+            <strong>실지급액 (세후):</strong> 세전 지급액과 동일한 <strong>${formatWon(data.net)}</strong>이 전액 지급됩니다.
+          </li>
+        `;
+      } else {
+        html += `
+          <li>
+            <strong>소득세 계산 (${taxPct}%):</strong><br>
+            기타소득금액이 ${formatWon(currentSettings.taxMinimumStandard)}를 초과하므로 정상 과세됩니다.<br>
+            <span class="math-exp">소득세 = 기타소득금액(${formatNumber(data.incomeAmount)}원) × ${taxPct}%</span> = ${formatNumber(data.incomeAmount * currentSettings.otherTaxRate)}원<br>
+            → 절사 단위 적용(${currentSettings.truncateUnit}원 미만 절사) = <strong>${formatWon(data.incomeTax)}</strong>
+          </li>
+          <li>
+            <strong>지방소득세 계산 (소득세의 10%):</strong><br>
+            <span class="math-exp">지방소득세 = 소득세(${formatNumber(data.incomeTax)}원) × 10%</span> = ${formatNumber(data.incomeTax * 0.1)}원<br>
+            → 절사 단위 적용(${currentSettings.truncateUnit}원 미만 절사) = <strong>${formatWon(data.localTax)}</strong>
+          </li>
+          <li>
+            <strong>원천징수 합계:</strong><br>
+            소득세(${formatWon(data.incomeTax)}) + 지방소득세(${formatWon(data.localTax)}) = <strong>${formatWon(data.totalTax)}</strong> (실효세율 ${data.isDeemed ? '8.8%' : ''})
+          </li>
+          <li>
+            <strong>실지급액 (세후):</strong><br>
+            세전 지급액(${formatWon(data.gross)}) − 원천징수 합계(${formatWon(data.totalTax)}) = <strong>${formatWon(data.net)}</strong>
+          </li>
+        `;
+      }
+
+      html += `</ol>`;
+      container.innerHTML = html;
+    }
+
+    /* ==========================================================================
+       전체 계산 업데이트 및 에러 표시 헬퍼
+       ========================================================================== */
+    function updateAllCalculations() {
+      calculateDaily();
+      calculateBusiness();
+      calculateOther();
+    }
+
+    function showInputError(errId, inputId, isError) {
+      const errEl = document.getElementById(errId);
+      const inputEl = document.getElementById(inputId);
+      if (errEl) {
+        if (isError) {
+          errEl.classList.add('show');
+        } else {
+          errEl.classList.remove('show');
+        }
+      }
+      if (inputEl) {
+        if (isError) {
+          inputEl.classList.add('is-invalid');
+        } else {
+          inputEl.classList.remove('is-invalid');
+        }
+      }
+    }
+
+    /* ==========================================================================
+       일용직 상세 입력 테이블 행 관리
+       ========================================================================== */
+    function renderDailyDetailRows() {
+      const tbody = document.getElementById('dailyDetailTbody');
+      tbody.innerHTML = '';
+
+      dailyDetailRows.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${row.label || `${idx + 1}일차`}</strong></td>
+          <td>
+            <div class="input-wrapper">
+              <input type="text" id="dailyRowWage_${row.id}" class="row-input" value="${formatNumber(row.wage)}" inputmode="numeric">
+              <span class="input-unit" style="font-size: 12px; right: 10px;">원</span>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-del-row" data-id="${row.id}" title="삭제">&times;</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // 실시간 금액 입력 포맷팅
+        const input = tr.querySelector(`#dailyRowWage_${row.id}`);
+        input.addEventListener('input', (e) => {
+          const val = parseNumber(e.target.value);
+          e.target.value = formatNumber(val);
+          row.wage = val;
+          calculateDaily();
+        });
+
+        // 삭제 이벤트
+        const delBtn = tr.querySelector('.btn-del-row');
+        delBtn.addEventListener('click', () => {
+          if (dailyDetailRows.length <= 1) {
+            showToast('최소 1개 이상의 근무일이 필요합니다.');
+            return;
+          }
+          dailyDetailRows = dailyDetailRows.filter(r => r.id !== row.id);
+          renderDailyDetailRows();
+          calculateDaily();
+        });
+      });
+    }
+
+    function addDailyDetailRow() {
+      const newId = nextDetailRowId++;
+      const nextDayNum = dailyDetailRows.length + 1;
+      const lastWage = dailyDetailRows.length > 0 ? dailyDetailRows[dailyDetailRows.length - 1].wage : 200000;
+      dailyDetailRows.push({
+        id: newId,
+        label: `${nextDayNum}일차`,
+        wage: lastWage
+      });
+      renderDailyDetailRows();
+      calculateDaily();
+    }
+
+    /* ==========================================================================
+       클립보드 복사용 탭 구분 텍스트 생성
+       ========================================================================== */
+    function getDailyCopyText() {
+      const gross = document.getElementById('resDailyGross').textContent;
+      const incomeTax = document.getElementById('resDailyIncomeTax').textContent;
+      const localTax = document.getElementById('resDailyLocalTax').textContent;
+      const totalTax = document.getElementById('resDailyTotalTax').textContent;
+      const net = document.getElementById('resDailyNetTable').textContent;
+
+      return `항목\t금액\n총 지급액(세전)\t${gross}\n소득세\t${incomeTax}\n지방소득세\t${localTax}\n원천징수 합계\t${totalTax}\n실지급액(세후)\t${net}`;
+    }
+
+    function getBusinessCopyText() {
+      const gross = document.getElementById('resBizGross').textContent;
+      const incomeTax = document.getElementById('resBizIncomeTax').textContent;
+      const localTax = document.getElementById('resBizLocalTax').textContent;
+      const totalTax = document.getElementById('resBizTotalTax').textContent;
+      const net = document.getElementById('resBizNet').textContent;
+
+      return `항목\t금액\n지급액(세전)\t${gross}\n소득세(3%)\t${incomeTax}\n지방소득세(0.3%)\t${localTax}\n원천징수 합계(3.3%)\t${totalTax}\n실지급액(세후)\t${net}`;
+    }
+
+    function getOtherCopyText() {
+      const gross = document.getElementById('resOtherGross').textContent;
+      const expense = document.getElementById('resOtherExpense').textContent;
+      const incomeAmt = document.getElementById('resOtherIncomeAmount').textContent;
+      const incomeTax = document.getElementById('resOtherIncomeTax').textContent;
+      const localTax = document.getElementById('resOtherLocalTax').textContent;
+      const totalTax = document.getElementById('resOtherTotalTax').textContent;
+      const net = document.getElementById('resOtherNet').textContent;
+
+      return `항목\t금액\n지급액(세전)\t${gross}\n필요경비\t${expense}\n기타소득금액\t${incomeAmt}\n소득세(20%)\t${incomeTax}\n지방소득세\t${localTax}\n원천징수 합계\t${totalTax}\n실지급액(세후)\t${net}`;
+    }
+
+    /* ==========================================================================
+       이벤트 리스너 및 초기화
+       ========================================================================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. 설정 로드 및 폼 반영
+      loadSettings();
+      populateSettingsForm();
+
+      // 2. 탭 전환 리스너
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabButtons.forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+          });
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+          btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+          const targetTabId = btn.getAttribute('data-tab');
+          const targetPane = document.getElementById(targetTabId);
+          if (targetPane) targetPane.classList.add('active');
+        });
+      });
+
+      // 3. 일용직 입력 모드 토글 (간단 / 상세)
+      const btnDailySimple = document.getElementById('btnDailySimple');
+      const btnDailyDetail = document.getElementById('btnDailyDetail');
+      const dailySimpleForm = document.getElementById('dailySimpleForm');
+      const dailyDetailForm = document.getElementById('dailyDetailForm');
+
+      btnDailySimple.addEventListener('click', () => {
+        dailyInputMode = 'simple';
+        btnDailySimple.classList.add('active');
+        btnDailyDetail.classList.remove('active');
+        dailySimpleForm.style.display = 'block';
+        dailyDetailForm.style.display = 'none';
+        calculateDaily();
+      });
+
+      btnDailyDetail.addEventListener('click', () => {
+        dailyInputMode = 'detail';
+        btnDailyDetail.classList.add('active');
+        btnDailySimple.classList.remove('active');
+        dailySimpleForm.style.display = 'none';
+        dailyDetailForm.style.display = 'block';
+        renderDailyDetailRows();
+        calculateDaily();
+      });
+
+      // 일용직 행 추가 버튼
+      document.getElementById('btnAddDailyRow').addEventListener('click', addDailyDetailRow);
+
+      // 일용직 입력 필드 실시간 이벤트
+      ['dailyNonTaxable', 'dailyWage', 'dailyDays'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', (e) => {
+          const val = parseNumber(e.target.value);
+          e.target.value = formatNumber(val);
+          calculateDaily();
+        });
+      });
+
+      // 일용직 계산과정 토글
+      const btnToggleDaily = document.getElementById('btnToggleDailyProcess');
+      const dailyProcessWrapper = document.getElementById('dailyProcessWrapper');
+      btnToggleDaily.addEventListener('click', () => {
+        const isOpen = dailyProcessWrapper.classList.toggle('open');
+        btnToggleDaily.textContent = isOpen ? '🔼 계산 과정 닫기' : '🔍 계산 과정 보기';
+      });
+
+      // 일용직 복사 버튼
+      document.getElementById('btnCopyDailyResult').addEventListener('click', () => {
+        copyToClipboard(getDailyCopyText());
+      });
+
+      // 4. 사업소득 모드 토글 (세전 → 세후 / 세후 → 세전 역산)
+      const btnBizForward = document.getElementById('btnBizForward');
+      const btnBizReverse = document.getElementById('btnBizReverse');
+      const bizForwardForm = document.getElementById('bizForwardForm');
+      const bizReverseForm = document.getElementById('bizReverseForm');
+
+      btnBizForward.addEventListener('click', () => {
+        bizMode = 'forward';
+        btnBizForward.classList.add('active');
+        btnBizReverse.classList.remove('active');
+        bizForwardForm.style.display = 'block';
+        bizReverseForm.style.display = 'none';
+        calculateBusiness();
+      });
+
+      btnBizReverse.addEventListener('click', () => {
+        bizMode = 'reverse';
+        btnBizReverse.classList.add('active');
+        btnBizForward.classList.remove('active');
+        bizForwardForm.style.display = 'none';
+        bizReverseForm.style.display = 'block';
+        calculateBusiness();
+      });
+
+      // 사업소득 입력 필드 실시간 이벤트
+      ['bizGrossInput', 'bizNetInput'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', (e) => {
+          const val = parseNumber(e.target.value);
+          e.target.value = formatNumber(val);
+          calculateBusiness();
+        });
+      });
+
+      // 사업소득 계산과정 토글
+      const btnToggleBiz = document.getElementById('btnToggleBizProcess');
+      const bizProcessWrapper = document.getElementById('bizProcessWrapper');
+      btnToggleBiz.addEventListener('click', () => {
+        const isOpen = bizProcessWrapper.classList.toggle('open');
+        btnToggleBiz.textContent = isOpen ? '🔼 계산 과정 닫기' : '🔍 계산 과정 보기';
+      });
+
+      // 사업소득 복사 버튼
+      document.getElementById('btnCopyBizResult').addEventListener('click', () => {
+        copyToClipboard(getBusinessCopyText());
+      });
+
+      // 5. 기타소득 모드 토글 (세전 → 세후 / 세후 → 세전 역산)
+      const btnOtherForward = document.getElementById('btnOtherForward');
+      const btnOtherReverse = document.getElementById('btnOtherReverse');
+      const otherForwardForm = document.getElementById('otherForwardForm');
+      const otherReverseForm = document.getElementById('otherReverseForm');
+
+      btnOtherForward.addEventListener('click', () => {
+        otherMode = 'forward';
+        btnOtherForward.classList.add('active');
+        btnOtherReverse.classList.remove('active');
+        otherForwardForm.style.display = 'block';
+        otherReverseForm.style.display = 'none';
+        calculateOther();
+      });
+
+      btnOtherReverse.addEventListener('click', () => {
+        otherMode = 'reverse';
+        btnOtherReverse.classList.add('active');
+        btnOtherForward.classList.remove('active');
+        otherForwardForm.style.display = 'none';
+        otherReverseForm.style.display = 'block';
+        calculateOther();
+      });
+
+      // 기타소득 의제 필요경비 체크박스
+      const deemedCheck = document.getElementById('otherDeemedExpenseCheck');
+      const actualExpGroup = document.getElementById('otherActualExpenseGroup');
+      deemedCheck.addEventListener('change', () => {
+        if (deemedCheck.checked) {
+          actualExpGroup.style.display = 'none';
+        } else {
+          actualExpGroup.style.display = 'block';
+        }
+        calculateOther();
+      });
+
+      // 기타소득 입력 필드 실시간 이벤트
+      ['otherGrossInput', 'otherNetInput', 'otherActualExpenseInput'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', (e) => {
+          const val = parseNumber(e.target.value);
+          e.target.value = formatNumber(val);
+          calculateOther();
+        });
+      });
+
+      // 기타소득 계산과정 토글
+      const btnToggleOther = document.getElementById('btnToggleOtherProcess');
+      const otherProcessWrapper = document.getElementById('otherProcessWrapper');
+      btnToggleOther.addEventListener('click', () => {
+        const isOpen = otherProcessWrapper.classList.toggle('open');
+        btnToggleOther.textContent = isOpen ? '🔼 계산 과정 닫기' : '🔍 계산 과정 보기';
+      });
+
+      // 기타소득 복사 버튼
+      document.getElementById('btnCopyOtherResult').addEventListener('click', () => {
+        copyToClipboard(getOtherCopyText());
+      });
+
+      // 6. 설정 탭 액션 버튼
+      document.getElementById('btnSaveSettings').addEventListener('click', readSettingsFromForm);
+      document.getElementById('btnResetSettings').addEventListener('click', resetSettingsToDefault);
+
+      // 설정 탭 숫자 입력 자동 쉼표 포맷
+      ['cfgDailyDeduction', 'cfgSmallTaxLimit', 'cfgTaxMinimumStandard'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', (e) => {
+          const val = parseNumber(e.target.value);
+          e.target.value = formatNumber(val);
+        });
+      });
+
+      // 7. 소득 구분 가이드 모달
+      const guideModal = document.getElementById('guideModal');
+      const btnOpenGuide = document.getElementById('btnOpenGuide');
+      const btnCloseGuide = document.getElementById('btnCloseGuide');
+
+      btnOpenGuide.addEventListener('click', () => {
+        guideModal.classList.add('active');
+      });
+
+      btnCloseGuide.addEventListener('click', () => {
+        guideModal.classList.remove('active');
+      });
+
+      guideModal.addEventListener('click', (e) => {
+        if (e.target === guideModal) {
+          guideModal.classList.remove('active');
+        }
+      });
+
+      // 가이드 모달 카드 클릭 시 해당 탭으로 이동
+      document.querySelectorAll('.guide-step-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const targetTab = card.getAttribute('data-target-tab');
+          guideModal.classList.remove('active');
+          const tabBtn = document.querySelector(`.tab-btn[data-tab="${targetTab}"]`);
+          if (tabBtn) tabBtn.click();
+        });
+      });
+
+      // 8. ESC 키로 모달 닫기
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && guideModal.classList.contains('active')) {
+          guideModal.classList.remove('active');
+        }
+      });
+
+      // 9. 초기 계산 수행
+      updateAllCalculations();
+    });
+  </script>
+</body>
+</html>
