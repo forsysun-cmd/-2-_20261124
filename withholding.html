@@ -1733,7 +1733,7 @@
               <select id="aiModelSelect" class="form-control" style="text-align: left; font-size: 14px; height: 46px;">
                 <option value="gemini-3.8-flash" selected>gemini-3.8-flash (추천: 차세대 고성능·고속 모델)</option>
                 <option value="gemini-2.5-flash">gemini-2.5-flash (안정적 최신 플래시)</option>
-                <option value="gemini-1.5-flash">gemini-1.5-flash (표준 플래시)</option>
+                <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (가볍고 빠름·혼잡할 때 추천)</option>
               </select>
             </div>
           </div>
@@ -1914,7 +1914,7 @@
               <select id="cfgGeminiModel" class="form-control" style="text-align: left; font-size: 14px; height: 46px;">
                 <option value="gemini-3.8-flash" selected>gemini-3.8-flash (기본 권장: 초고속·고지능 플래시)</option>
                 <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (가볍고 빠름)</option>
               </select>
             </div>
           </div>
@@ -3137,6 +3137,28 @@
       return resultHtml;
     }
 
+    // ===== Gemini 자동 재시도 · 예비 모델 설정 =====
+    const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite'; // 혼잡할 때 자동 전환할 예비 모델
+    const GEMINI_MAX_ATTEMPTS = 3;                          // 모델별 최대 시도 횟수
+    const GEMINI_RETRY_DELAYS_MS = [2000, 4000];            // 재시도 전 대기 시간(2초, 4초)
+    let lastUsedGeminiModel = '';                           // 실제로 답변한 모델 (화면 표시용)
+
+    function geminiSleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 잠시 뒤 다시 하면 해결될 수 있는 오류인지 판단 (혼잡·한도·서버 오류)
+    function isTemporaryGeminiError(status, message) {
+      if ([429, 500, 502, 503, 504].includes(status)) return true;
+      return /high demand|overloaded|unavailable|try again later|resource.?exhausted|rate limit/i.test(message || '');
+    }
+
+    // "AI 답변을 작성하고 있습니다" 문구를 진행 상황으로 바꾸기
+    function setAiTypingText(text) {
+      const span = document.querySelector('#aiTypingIndicator .ai-typing-indicator span');
+      if (span) span.textContent = text;
+    }
+
     /**
      * Google Gemini API 통신 함수 (gemini-3.8-flash 지원)
      */
@@ -3146,8 +3168,7 @@
         throw new Error('API_KEY_REQUIRED');
       }
 
-      const model = currentSettings.aiModel || 'gemini-3.8-flash';
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const preferredModel = currentSettings.aiModel || 'gemini-3.8-flash';
 
       const systemInstruction = `당신은 대한민국 세무사무소의 10년 차 베테랑 원천징수 실무 전문 세무사 AI 비서입니다.
 사용자는 세무회계 실무자 및 세무사무소 직원입니다.
@@ -3167,39 +3188,76 @@
           }
         ],
         generationConfig: {
-          temperature: 0.3,
           maxOutputTokens: 2048
         }
       };
 
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
+      // 시도 순서: 선택한 모델 → (다르면) 예비 모델
+      const modelsToTry = [preferredModel];
+      if (preferredModel !== GEMINI_FALLBACK_MODEL) modelsToTry.push(GEMINI_FALLBACK_MODEL);
 
-      if (!res.ok) {
-        const errorJson = await res.json().catch(() => ({}));
-        const errMsg = errorJson?.error?.message || `HTTP ${res.status}: ${res.statusText}`;
+      let lastError = null;
+      for (let m = 0; m < modelsToTry.length; m++) {
+        const model = modelsToTry[m];
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-        if (res.status === 400 && errMsg.includes('API_KEY')) {
-          throw new Error('유효하지 않은 API 키입니다. Google AI Studio에서 올바른 키를 발급받아 입력해 주세요.');
+        for (let attempt = 1; attempt <= GEMINI_MAX_ATTEMPTS; attempt++) {
+          if (m > 0 || attempt > 1) {
+            setAiTypingText(m > 0
+              ? `서버가 혼잡해 예비 모델(${model})로 다시 시도하는 중 (${attempt}/${GEMINI_MAX_ATTEMPTS})`
+              : `서버가 혼잡해 다시 시도하는 중 (${attempt}/${GEMINI_MAX_ATTEMPTS})`);
+          }
+
+          let res;
+          try {
+            res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(requestBody)
+            });
+          } catch (netErr) {
+            throw new Error('인터넷 연결을 확인해 주세요.');
+          }
+
+          if (res.ok) {
+            const data = await res.json();
+            const parts = data?.candidates?.[0]?.content?.parts || [];
+            const replyText = parts.filter(p => p.text && !p.thought).map(p => p.text).join('').trim();
+            if (!replyText) {
+              throw new Error('AI로부터 답변 텍스트를 수신하지 못했습니다.');
+            }
+            lastUsedGeminiModel = model;
+            return replyText;
+          }
+
+          const errorJson = await res.json().catch(() => ({}));
+          const errMsg = errorJson?.error?.message || `HTTP ${res.status}: ${res.statusText}`;
+
+          if (res.status === 400 && errMsg.includes('API_KEY')) {
+            throw new Error('유효하지 않은 API 키입니다. Google AI Studio에서 올바른 키를 발급받아 입력해 주세요.');
+          }
+
+          if (isTemporaryGeminiError(res.status, errMsg)) {
+            // 일시적 혼잡·사용량 한도 → 잠시 기다렸다가 재시도, 그래도 안 되면 예비 모델로
+            lastError = new Error('지금 Google AI 서버가 혼잡하거나 사용량 한도에 도달했습니다. 자동으로 여러 번 다시 시도하고 예비 모델로도 시도했지만 실패했습니다. 1~2분 뒤 다시 질문해 주세요.');
+            if (attempt < GEMINI_MAX_ATTEMPTS) {
+              await geminiSleep(GEMINI_RETRY_DELAYS_MS[attempt - 1] || 4000);
+              continue;
+            }
+            break; // 다음(예비) 모델로
+          }
+
+          if (res.status === 404) {
+            // 모델 이름이 없거나 종료됨 → 예비 모델로
+            lastError = new Error(`모델 '${model}'을 찾을 수 없거나 접근 권한이 없습니다. 상단 설정에서 모델을 변경하거나 API 키를 확인해 주세요.`);
+            break;
+          }
+
+          throw new Error(`Gemini API 통신 오류: ${errMsg}`);
         }
-        if (res.status === 404) {
-          throw new Error(`모델 '${model}'을 찾을 수 없거나 접근 권한이 없습니다. 상단 설정에서 모델을 변경하거나 API 키를 확인해 주세요.`);
-        }
-        if (res.status === 429) {
-          throw new Error('Google AI 사용량 한도(Rate Limit)에 도달했습니다. 잠시 후 다시 시도해 주세요.');
-        }
-        throw new Error(`Gemini API 통신 오류: ${errMsg}`);
       }
 
-      const data = await res.json();
-      const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!replyText) {
-        throw new Error('AI로부터 답변 텍스트를 수신하지 못했습니다.');
-      }
-      return replyText;
+      throw lastError || new Error('AI 답변을 받지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
 
     /**
@@ -3237,7 +3295,7 @@
       const meta = document.createElement('div');
       meta.className = 'chat-meta';
       const nowStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-      meta.textContent = role === 'user' ? `👤 질문자 · ${nowStr}` : `🤖 Gemini 3.8 Flash · ${nowStr}`;
+      meta.textContent = role === 'user' ? `👤 질문자 · ${nowStr}` : `🤖 ${lastUsedGeminiModel || currentSettings.aiModel || 'gemini-3.8-flash'} · ${nowStr}`;
 
       wrap.appendChild(bubble);
       wrap.appendChild(meta);

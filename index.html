@@ -3315,6 +3315,16 @@
       const AI_KEY_STORAGE = 'gemini_user_api_key_v1'; // 원천징수 계산기와 공유
       const AI_MODEL_STORAGE = 'taxAssistant_geminiModel';
       const DEFAULT_MODEL = 'gemini-3.8-flash';
+      const FALLBACK_MODEL = 'gemini-3.5-flash-lite'; // 혼잡할 때 자동 전환할 예비 모델
+      const MAX_ATTEMPTS = 3;                          // 모델별 최대 시도 횟수
+      const RETRY_DELAYS_MS = [2000, 4000];            // 재시도 전 대기 시간(2초, 4초)
+
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      // 잠시 뒤 다시 하면 해결될 수 있는 오류인지 판단 (혼잡·한도·서버 오류)
+      function isTemporaryError(status, message) {
+        if ([429, 500, 502, 503, 504].includes(status)) return true;
+        return /high demand|overloaded|unavailable|try again later|resource.?exhausted|rate limit/i.test(message || '');
+      }
       const SYSTEM_PROMPT =
         '당신은 한국 세무사무소 신입 직원을 돕는 세무 실무 도우미입니다. ' +
         '부가가치세, 원천세, 4대보험, 종합소득세, 법인세 등 한국 세무 실무 질문에 한국어로 간결하고 정확하게 답하세요. ' +
@@ -3401,30 +3411,55 @@
         pending.classList.add('pending');
 
         try {
-          const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-            encodeURIComponent(getModel()) + ':generateContent';
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: SYSTEM_PROMPT + settingsContext() }] },
-              contents: history.slice(-20)
-            })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            const msg = (data.error && data.error.message) || ('HTTP ' + res.status);
-            throw new Error(msg);
+          // 시도 순서: 선택한 모델 → (다르면) 예비 모델
+          const preferred = getModel();
+          const models = preferred === FALLBACK_MODEL ? [preferred] : [preferred, FALLBACK_MODEL];
+          let data = null, usedModel = '', lastErr = null;
+
+          outer:
+          for (let mi = 0; mi < models.length; mi++) {
+            const model = models[mi];
+            const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+              encodeURIComponent(model) + ':generateContent';
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+              if (mi > 0 || attempt > 1) {
+                pending.textContent = mi > 0
+                  ? '서버가 혼잡해 예비 모델(' + model + ')로 다시 시도하는 중... (' + attempt + '/' + MAX_ATTEMPTS + ')'
+                  : '서버가 혼잡해 다시 시도하는 중... (' + attempt + '/' + MAX_ATTEMPTS + ')';
+              }
+              const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                body: JSON.stringify({
+                  systemInstruction: { parts: [{ text: SYSTEM_PROMPT + settingsContext() }] },
+                  contents: history.slice(-20)
+                })
+              });
+              const body = await res.json().catch(() => ({}));
+              if (res.ok) { data = body; usedModel = model; break outer; }
+
+              const msg = (body.error && body.error.message) || ('HTTP ' + res.status);
+              if (isTemporaryError(res.status, msg)) {
+                lastErr = new Error('지금 Google AI 서버가 혼잡하거나 사용량 한도에 도달했습니다 (자동 재시도·예비 모델 모두 실패). 1~2분 뒤 다시 질문해 주세요.');
+                if (attempt < MAX_ATTEMPTS) { await sleep(RETRY_DELAYS_MS[attempt - 1] || 4000); continue; }
+                break; // 다음(예비) 모델로
+              }
+              if (res.status === 404) { lastErr = new Error(msg + ' (404, model not found)'); break; }
+              throw new Error(msg);
+            }
           }
+          if (!data) throw lastErr || new Error('AI 답변을 받지 못했습니다.');
+
           const cand = data.candidates && data.candidates[0];
           const answer = cand && cand.content && cand.content.parts
-            ? cand.content.parts.map(p => p.text || '').join('').trim()
+            ? cand.content.parts.filter(p => !p.thought).map(p => p.text || '').join('').trim()
             : '';
           if (!answer) throw new Error('응답이 비어 있습니다' + (cand && cand.finishReason ? ' (' + cand.finishReason + ')' : '') + '.');
 
           history.push({ role: 'model', parts: [{ text: answer }] });
           pending.classList.remove('pending');
-          pending.innerHTML = renderMarkdown(answer);
+          pending.innerHTML = renderMarkdown(answer) +
+            (usedModel !== preferred ? '<br><small>※ 서버 혼잡으로 예비 모델(' + escapeHtml(usedModel) + ')이 답변했습니다.</small>' : '');
         } catch (err) {
           history.pop(); // 실패한 질문은 대화 이력에서 제외
           pending.className = 'ai-msg error';
